@@ -1,22 +1,42 @@
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { markOnboardingSeen } from "../lib/onboarding";
 
 export function OnboardingIntroPage() {
   const navigate = useNavigate();
 
+  function handleStart() {
+    markOnboardingSeen();
+    navigate("/concerns/new");
+  }
+
   return (
-    <AppLayout title="شروع آرام">
-      <section className="hero-card">
-        <p className="eyebrow">برای خالی‌تر شدن ذهن</p>
-        <h1>لازم نیست همه‌چیز را امروز حل کنی.</h1>
+    <AppLayout title="شروع نرم" showHeader={false}>
+      <Card variant="hero" className="intro-card">
+        <div className="calm-mark" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+
+        <p className="eyebrow">برای کمی خلوت‌تر شدن ذهن</p>
+        <h1>قرار نیست همه‌چیز را یک‌جا حل کنی.</h1>
         <p className="description">
-          فقط چیزی که ذهنت را درگیر کرده بنویس و یک قدم کوچک برایش بساز.
+          اینجا فقط چیزی را که ذهنت را درگیر کرده می‌نویسی، بعد با هم برایش
+          یک قدم کوچک و قابل انجام پیدا می‌کنیم.
         </p>
-        <Button type="button" onClick={() => navigate("/concerns/new")}>
-          شروع
+
+        <div className="intro-note">
+          <strong>همین که شروع کردی ارزش دارد.</strong>
+          <span>لازم نیست همه‌چیز کامل باشد.</span>
+        </div>
+
+        <Button type="button" onClick={handleStart}>
+          با یک یادداشت شروع کن
         </Button>
-      </section>
+      </Card>
     </AppLayout>
   );
 }

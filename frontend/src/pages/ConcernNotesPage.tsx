@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 import { TextArea } from "../components/TextArea";
 import {
   createConcern,
@@ -10,6 +14,7 @@ import {
   SOFT_ERROR_MESSAGE,
   updateConcern,
 } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { Concern } from "../types";
 
 export function ConcernNotesPage() {
@@ -18,6 +23,9 @@ export function ConcernNotesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   async function loadConcerns() {
@@ -43,16 +51,31 @@ export function ConcernNotesPage() {
     event.preventDefault();
     const text = newConcern.trim();
 
-    if (!text || concerns.length >= 5) {
+    if (!text) {
+      setError("یک جمله کوتاه هم برای شروع کافی است.");
+      return;
+    }
+
+    if (isOverTextLimit(text, TEXT_LIMITS.concern)) {
+      setError(TEXT_LIMIT_MESSAGE);
+      return;
+    }
+
+    if (concerns.length >= 5) {
+      setError("فعلاً همین چند مورد برای شروع کافی است.");
       return;
     }
 
     try {
+      setIsAdding(true);
+      setError("");
       await createConcern(text);
       setNewConcern("");
       await loadConcerns();
     } catch {
       setError(SOFT_ERROR_MESSAGE);
+    } finally {
+      setIsAdding(false);
     }
   }
 
@@ -61,63 +84,82 @@ export function ConcernNotesPage() {
     const text = editingText.trim();
 
     if (!editingId || !text) {
-      setError("متن نگرانی را بنویس.");
+      setError("این قسمت را خالی نگذار. کوتاه هم باشد کافی است.");
+      return;
+    }
+
+    if (isOverTextLimit(text, TEXT_LIMITS.concern)) {
+      setError(TEXT_LIMIT_MESSAGE);
       return;
     }
 
     try {
+      setIsSaving(true);
+      setError("");
       await updateConcern(editingId, text);
       setEditingId(null);
       setEditingText("");
       await loadConcerns();
     } catch {
       setError(SOFT_ERROR_MESSAGE);
+    } finally {
+      setIsSaving(false);
     }
   }
 
   async function handleDelete(concernId: number) {
-    const confirmed = window.confirm("این نگرانی حذف شود؟");
+    const confirmed = window.confirm("مطمئنی می‌خواهی این یادداشت را برداری؟");
     if (!confirmed) {
       return;
     }
 
     try {
+      setDeletingId(concernId);
+      setError("");
       await deleteConcern(concernId);
       await loadConcerns();
     } catch {
       setError(SOFT_ERROR_MESSAGE);
+    } finally {
+      setDeletingId(null);
     }
   }
 
   return (
-    <AppLayout title="نگرانی‌های من">
-      <section className="card">
-        <h1>نگرانی‌های من</h1>
-        <p className="description">می‌توانی مسیرت را سبک‌تر کنی.</p>
+    <AppLayout title="یادداشت‌های من">
+      <section className="page-section notepad-card">
+        <PageHeader
+          eyebrow="جایی برای خالی‌تر شدن ذهن"
+          title="یادداشت‌های من"
+          description="اینجا لازم نیست چیزی را حل کنی. فقط می‌توانی بنویسی و هر وقت آماده بودی برگردی."
+        />
 
-        {isLoading ? <p className="muted">در حال آوردن یادداشت‌ها...</p> : null}
-        {error ? <p className="error-banner">{error}</p> : null}
+        {isLoading ? <LoadingState text="داریم یادداشت‌هایت را می‌آوریم..." /> : null}
+        <ErrorMessage message={error} />
 
         {!isLoading && concerns.length === 0 ? (
           <EmptyState
-            title="اینجا هنوز خالی است."
-            description="یک جمله کوتاه هم برای شروع کافی است."
+            title="اینجا هنوز خلوت است."
+            description="اگر چیزی توی ذهنت مانده، یک جمله کوتاه هم کافی است."
           />
         ) : null}
 
         <div className="notes-list">
           {concerns.map((concern) => (
-            <article className="note-card" key={concern.id}>
+            <Card as="article" className="note-card" key={concern.id}>
               {editingId === concern.id ? (
                 <form className="stack" onSubmit={handleUpdate}>
                   <TextArea
-                    label="ویرایش نگرانی"
+                    label="این یادداشت را کمی عوض کن"
                     rows={4}
                     value={editingText}
+                    maxLength={TEXT_LIMITS.concern}
                     onChange={(event) => setEditingText(event.target.value)}
                   />
                   <div className="button-row">
-                    <Button type="submit">ذخیره</Button>
+                    <Button type="submit" isLoading={isSaving}>
+                      نگه داشتن تغییر
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -144,28 +186,30 @@ export function ConcernNotesPage() {
                     <Button
                       type="button"
                       variant="danger"
+                      isLoading={deletingId === concern.id}
                       onClick={() => handleDelete(concern.id)}
                     >
-                      حذف
+                      برداشتن
                     </Button>
                   </div>
                 </>
               )}
-            </article>
+            </Card>
           ))}
         </div>
 
         {concerns.length < 5 ? (
           <form className="soft-panel stack" onSubmit={handleAdd}>
             <TextArea
-              label="افزودن نگرانی"
+              label="یادداشت تازه"
               rows={3}
               value={newConcern}
+              maxLength={TEXT_LIMITS.concern}
               onChange={(event) => setNewConcern(event.target.value)}
-              placeholder="چیزی که بهتر است از ذهنت بیرون بیاید..."
+              placeholder="هر چیزی که بهتر است از ذهنت بیرون بیاید..."
             />
-            <Button type="submit" disabled={!newConcern.trim()}>
-              افزودن
+            <Button type="submit" disabled={!newConcern.trim()} isLoading={isAdding}>
+              اضافه کن
             </Button>
           </form>
         ) : (

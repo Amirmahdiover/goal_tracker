@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 import { TextArea } from "../components/TextArea";
 import { TextInput } from "../components/TextInput";
 import {
@@ -10,6 +14,7 @@ import {
   isNotFoundError,
   SOFT_ERROR_MESSAGE,
 } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { Step } from "../types";
 
 function today() {
@@ -36,7 +41,7 @@ export function AddTrackingPage() {
         const foundStep = steps.find((item) => item.id === Number(stepId));
         setStep(foundStep ?? null);
       } catch (caughtError) {
-        setError(isNotFoundError(caughtError) ? "قدم پیدا نشد." : SOFT_ERROR_MESSAGE);
+        setError(isNotFoundError(caughtError) ? "این قدم را پیدا نکردیم." : SOFT_ERROR_MESSAGE);
       } finally {
         setIsLoading(false);
       }
@@ -50,7 +55,12 @@ export function AddTrackingPage() {
     const cleanAmount = Number(amount);
 
     if (!step || cleanAmount <= 0 || !date) {
-      setError("مقدار و تاریخ را کامل کن.");
+      setError("مقدار و تاریخ را خالی نگذار؛ همین دو مورد کافی است.");
+      return;
+    }
+
+    if (isOverTextLimit(note.trim(), TEXT_LIMITS.trackingNote)) {
+      setError(TEXT_LIMIT_MESSAGE);
       return;
     }
 
@@ -72,49 +82,58 @@ export function AddTrackingPage() {
   }
 
   return (
-    <AppLayout title="ثبت پیشرفت">
-      <section className="card">
-        <h1>ثبت پیشرفت</h1>
+    <AppLayout title="پیشرفتت را ثبت کن">
+      <Card>
+        <PageHeader
+          eyebrow="برای همین بخش از مسیر"
+          title="پیشرفتت را ثبت کن"
+          description="مقداری که انجام دادی را برای این بخش از مسیرت وارد کن."
+        />
 
-        {isLoading ? <p className="muted">در حال آماده‌سازی...</p> : null}
-        {error ? <p className="error-banner">{error}</p> : null}
+        {isLoading ? <LoadingState text="داریم این قدم را پیدا می‌کنیم..." /> : null}
+        <ErrorMessage message={error} />
 
         {!isLoading && step ? (
           <form className="stack" onSubmit={handleSubmit}>
-            <div className="selected-note">
+            <div className="selected-note tracking-step-note">
+              <span>این قدم</span>
               <strong>{step.title}</strong>
-              <span>واحد: {step.unit}</span>
+              <small>واحد: {step.unit}</small>
             </div>
 
             <TextInput
-              label="مقدار"
+              className="amount-input"
+              label={`چقدر جلو رفتی؟ (${step.unit})`}
               type="number"
               min="0"
               step="0.1"
               inputMode="decimal"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
+              placeholder="۰"
             />
             <TextInput
-              label="تاریخ"
+              label="برای چه روزی؟"
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
             />
             <TextArea
-              label="یادداشت"
+              label="یادداشت کوچک، اگر دوست داشتی"
               rows={4}
               value={note}
+              maxLength={TEXT_LIMITS.trackingNote}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="اگر دوست داشتی، یک توضیح کوتاه بنویس."
+              placeholder="مثلاً امروز سبک‌تر از چیزی بود که فکر می‌کردم."
+              hint="می‌توانی این قسمت را خالی بگذاری."
             />
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "در حال ثبت..." : "ثبت"}
+            <Button type="submit" isLoading={isSubmitting}>
+              {isSubmitting ? "داریم نگهش می‌داریم..." : "ثبت پیشرفت"}
             </Button>
           </form>
         ) : null}
-      </section>
+      </Card>
     </AppLayout>
   );
 }

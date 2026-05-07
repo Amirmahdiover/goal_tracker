@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 import { TextArea } from "../components/TextArea";
-import {
-  createConcern,
-  getConcerns,
-  SOFT_ERROR_MESSAGE,
-} from "../lib/api";
+import { createConcern, getConcerns, SOFT_ERROR_MESSAGE } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { Concern } from "../types";
 
 export function SelectConcernPage() {
@@ -42,11 +43,23 @@ export function SelectConcernPage() {
 
   async function handleAddConcern() {
     const text = newConcern.trim();
-    if (!text || concerns.length >= 5) {
+    if (!text) {
+      setError("اگر چیزی به ذهنت آمد، همین‌جا کوتاه بنویس.");
+      return;
+    }
+
+    if (isOverTextLimit(text, TEXT_LIMITS.concern)) {
+      setError(TEXT_LIMIT_MESSAGE);
+      return;
+    }
+
+    if (concerns.length >= 5) {
+      setError("فعلاً همین چند مورد برای شروع کافی است.");
       return;
     }
 
     try {
+      setError("");
       setIsSubmitting(true);
       const created = await createConcern(text);
       setConcerns((current) => [...current, created]);
@@ -62,7 +75,7 @@ export function SelectConcernPage() {
   function handleContinue() {
     const selectedConcern = concerns.find((concern) => concern.id === selectedId);
     if (!selectedConcern) {
-      setError("یک مورد را انتخاب کن.");
+      setError("یکی از یادداشت‌ها را انتخاب کن؛ هر کدام که امروز سبک‌تر است.");
       return;
     }
 
@@ -71,17 +84,26 @@ export function SelectConcernPage() {
   }
 
   return (
-    <AppLayout title="انتخاب مسیر">
-      <section className="card">
-        <h1>فعلاً دوست داری برای کدام مورد یک قدم کوچک بسازیم؟</h1>
+    <AppLayout title="انتخاب یک مورد">
+      <Card>
+        <PageHeader
+          eyebrow="فقط یکی برای امروز"
+          title="دوست داری فعلاً کدام یادداشت را سبک‌تر کنیم؟"
+          description="لازم نیست همه چیز را یک‌جا حل کنی. یکی را انتخاب کن و آرام جلو برو."
+        />
 
-        {isLoading ? <p className="muted">در حال آوردن نگرانی‌ها...</p> : null}
-        {error ? <p className="error-banner">{error}</p> : null}
+        {isLoading ? <LoadingState text="داریم یادداشت‌هایت را می‌آوریم..." /> : null}
+        <ErrorMessage message={error} />
 
         {!isLoading && concerns.length === 0 ? (
           <EmptyState
             title="هنوز چیزی ننوشته‌ای."
-            description="برای شروع همین کافی است که فقط یک جمله کوتاه بنویسی."
+            description="یک جمله کوتاه هم برای شروع کافی است."
+            action={
+              <Button type="button" onClick={() => navigate("/concerns/new")}>
+                اولین یادداشت را بنویس
+              </Button>
+            }
           />
         ) : null}
 
@@ -95,27 +117,29 @@ export function SelectConcernPage() {
               type="button"
               onClick={() => setSelectedId(concern.id)}
             >
-              {concern.text}
+              <span>{concern.text}</span>
             </button>
           ))}
         </div>
 
         {concerns.length < 5 ? (
-          <div className="soft-panel">
+          <div className="soft-panel stack">
             <TextArea
-              label="افزودن نگرانی تازه"
+              label="یادداشت تازه"
               value={newConcern}
+              maxLength={TEXT_LIMITS.concern}
               rows={3}
               onChange={(event) => setNewConcern(event.target.value)}
-              placeholder="اگر مورد دیگری هم هست، اینجا بنویس..."
+              placeholder="اگر چیز دیگری هم توی ذهنت هست..."
             />
             <Button
               type="button"
               variant="secondary"
-              disabled={isSubmitting || !newConcern.trim()}
+              isLoading={isSubmitting}
+              disabled={!newConcern.trim()}
               onClick={handleAddConcern}
             >
-              افزودن
+              اضافه کن
             </Button>
           </div>
         ) : (
@@ -123,9 +147,9 @@ export function SelectConcernPage() {
         )}
 
         <Button type="button" disabled={!selectedId} onClick={handleContinue}>
-          ساخت هدف
+          یک مسیر کوچک بساز
         </Button>
-      </section>
+      </Card>
     </AppLayout>
   );
 }

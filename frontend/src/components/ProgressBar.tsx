@@ -8,7 +8,7 @@ export function ProgressBar({ value }: ProgressBarProps) {
   return (
     <div
       className="progress-bar"
-      aria-label={`پیشرفت ${Math.round(safeValue)} درصد`}
+      aria-label={`این مسیر ${Math.round(safeValue)} درصد جلو رفته`}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}

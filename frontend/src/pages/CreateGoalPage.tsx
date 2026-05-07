@@ -2,8 +2,12 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { PageHeader } from "../components/PageHeader";
 import { TextInput } from "../components/TextInput";
 import { createGoal, SOFT_ERROR_MESSAGE } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 
 export function CreateGoalPage() {
   const navigate = useNavigate();
@@ -20,7 +24,12 @@ export function CreateGoalPage() {
     const cleanTitle = title.trim();
 
     if (!cleanTitle) {
-      setError("عنوان هدف را بنویس.");
+      setError("این قسمت را خالی نگذار. یک جمله ساده کافی است.");
+      return;
+    }
+
+    if (isOverTextLimit(cleanTitle, TEXT_LIMITS.goalTitle)) {
+      setError(TEXT_LIMIT_MESSAGE);
       return;
     }
 
@@ -37,39 +46,44 @@ export function CreateGoalPage() {
   }
 
   return (
-    <AppLayout title="هدف تازه">
-      <section className="card">
+    <AppLayout title="مسیر تازه">
+      <Card>
         {selectedConcernText ? (
           <div className="selected-note">
-            <span>برای این مورد:</span>
+            <span>از این یادداشت شروع می‌کنیم:</span>
             <strong>{selectedConcernText}</strong>
           </div>
         ) : null}
 
-        <h1>برای این نگرانی، چه مسیر کوچکی را می‌خواهی شروع کنی؟</h1>
-        <p className="description">
-          لازم نیست بزرگ یا کامل باشد. فقط یک مسیر ساده برای شروع بنویس.
-        </p>
+        <PageHeader
+          eyebrow="یک مسیر کوچک"
+          title="دوست داری از اینجا به کدام سمت بروی؟"
+          description="یک جمله ساده کافی است. قرار نیست برنامه کامل بنویسی؛ فقط جهت را کمی روشن‌تر می‌کنی."
+        />
 
         <form className="stack" onSubmit={handleSubmit}>
           <TextInput
-            label="عنوان هدف"
+            label="مسیر من"
             value={title}
+            maxLength={TEXT_LIMITS.goalTitle}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="از پوستم مراقبت کنم"
+            placeholder="مثلاً خوابم را کمی آرام‌تر کنم"
+            hint="همان‌طور بنویس که با خودت حرف می‌زنی."
           />
-          <div className="hint-list">
-            <span>یادگیری ماشین لرنینگ را شروع کنم</span>
-            <span>خوابم را کمی بهتر کنم</span>
+
+          <div className="hint-list examples-list" aria-label="نمونه مسیرها">
+            <span>هر روز چند صفحه بخوانم</span>
+            <span>کمی بیشتر مراقب بدنم باشم</span>
+            <span>حرکتم را آرام‌آرام بیشتر کنم</span>
           </div>
 
-          {error ? <p className="error-banner">{error}</p> : null}
+          <ErrorMessage message={error} />
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "در حال ساخت..." : "ادامه"}
+          <Button type="submit" isLoading={isSubmitting}>
+            {isSubmitting ? "داریم مسیرت را می‌سازیم..." : "قدم‌های کوچک را ببینیم"}
           </Button>
         </form>
-      </section>
+      </Card>
     </AppLayout>
   );
 }

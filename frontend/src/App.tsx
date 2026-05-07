@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
+import { AppLayout } from "./components/AppLayout";
+import { Card } from "./components/Card";
+import { ErrorMessage } from "./components/ErrorMessage";
+import { LoadingState } from "./components/LoadingState";
 import { SOFT_ERROR_MESSAGE, getGoal, isNotFoundError } from "./lib/api";
+import { hasSeenOnboarding } from "./lib/onboarding";
 import { ensureUserId } from "./lib/user";
 import { AddTrackingPage } from "./pages/AddTrackingPage";
 import { ConcernInputPage } from "./pages/ConcernInputPage";
@@ -49,25 +54,27 @@ function App() {
 
   if (!isReady) {
     return (
-      <main className="app-shell" dir="rtl">
-        <section className="card loading-card">در حال آماده‌سازی...</section>
-      </main>
+      <AppLayout showHeader={false}>
+        <Card className="startup-card">
+          <LoadingState text="داریم فضای آرامت را آماده می‌کنیم..." />
+        </Card>
+      </AppLayout>
     );
   }
 
   if (startupError) {
     return (
-      <main className="app-shell" dir="rtl">
-        <section className="card">
-          <p className="error-banner">{startupError}</p>
-        </section>
-      </main>
+      <AppLayout showHeader={false}>
+        <Card className="startup-card">
+          <ErrorMessage message={startupError} />
+        </Card>
+      </AppLayout>
     );
   }
 
   return (
     <Routes>
-      <Route path="/" element={<OnboardingIntroPage />} />
+      <Route path="/" element={<OnboardingGate />} />
       <Route path="/concerns/new" element={<ConcernInputPage />} />
       <Route path="/concerns/select" element={<SelectConcernPage />} />
       <Route path="/goal/new" element={<CreateGoalPage />} />
@@ -80,6 +87,71 @@ function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function OnboardingGate() {
+  const [isCheckingGoal, setIsCheckingGoal] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkGoal() {
+      if (hasSeenOnboarding()) {
+        setShouldRedirect(true);
+        setIsCheckingGoal(false);
+        return;
+      }
+
+      try {
+        await getGoal();
+        if (isMounted) {
+          setShouldRedirect(true);
+        }
+      } catch (caughtError) {
+        if (isNotFoundError(caughtError)) {
+          if (isMounted) {
+            setShouldRedirect(false);
+          }
+        } else if (isMounted) {
+          setError(SOFT_ERROR_MESSAGE);
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingGoal(false);
+        }
+      }
+    }
+
+    void checkGoal();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (isCheckingGoal) {
+    return (
+      <AppLayout showHeader={false}>
+        <Card className="startup-card">
+          <LoadingState text="داریم مسیرت را بررسی می‌کنیم..." />
+        </Card>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout showHeader={false}>
+        <Card className="startup-card">
+          <ErrorMessage message={error} />
+        </Card>
+      </AppLayout>
+    );
+  }
+
+  return shouldRedirect ? <Navigate to="/dashboard" replace /> : <OnboardingIntroPage />;
 }
 
 export default App;

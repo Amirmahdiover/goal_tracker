@@ -2,8 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { PageHeader } from "../components/PageHeader";
 import { TextInput } from "../components/TextInput";
 import { createSteps, SOFT_ERROR_MESSAGE } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { StepPayload } from "../types";
 
 const UNIT_OPTIONS = [
@@ -15,9 +19,7 @@ const UNIT_OPTIONS = [
   "صفحه",
   "ویدیو",
   "لیوان",
-  "قرص",
   "جلسه",
-  "تسک",
   "مورد دیگر",
 ];
 
@@ -44,6 +46,10 @@ function toStepPayload(step: StepForm, index: number): StepPayload {
   };
 }
 
+function hasStartedStep(step: StepForm) {
+  return Boolean(step.title.trim() || step.targetValue || step.customUnit.trim());
+}
+
 export function CreateStepsPage() {
   const navigate = useNavigate();
   const [steps, setSteps] = useState<StepForm[]>([{ ...emptyStep }]);
@@ -58,21 +64,29 @@ export function CreateStepsPage() {
 
   function validate(payloads: StepPayload[]) {
     if (payloads.length === 0) {
-      return "حداقل یک قدم را بنویس.";
+      return "برای شروع، یک قدم کوچک بنویس. همین کافی است.";
     }
 
     const hasInvalidStep = payloads.some(
       (step) => !step.title || step.target_value <= 0 || !step.unit,
     );
 
-    return hasInvalidStep ? "عنوان، مقدار و واحد هر قدم را کامل کن." : "";
+    if (hasInvalidStep) {
+      return "برای قدم‌هایی که نوشتی، عنوان، مقدار و واحد را خالی نگذار.";
+    }
+
+    const hasLongText = payloads.some(
+      (step) =>
+        isOverTextLimit(step.title, TEXT_LIMITS.stepTitle) ||
+        isOverTextLimit(step.unit, TEXT_LIMITS.customUnit),
+    );
+
+    return hasLongText ? TEXT_LIMIT_MESSAGE : "";
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const payloads = steps
-      .map(toStepPayload)
-      .filter((step) => step.title || step.target_value || step.unit);
+    const payloads = steps.filter(hasStartedStep).map(toStepPayload);
     const validationError = validate(payloads);
 
     if (validationError) {
@@ -93,10 +107,13 @@ export function CreateStepsPage() {
   }
 
   return (
-    <AppLayout title="قدم‌ها">
-      <section className="card">
-        <h1>این مسیر را به چند قدم کوچک تقسیم کن.</h1>
-        <p className="description">برای شروع، یک قدم هم کافی است.</p>
+    <AppLayout title="قدم‌های کوچک">
+      <Card>
+        <PageHeader
+          eyebrow="آرام و قابل انجام"
+          title="برای این مسیر، چه قدم کوچکی می‌شود برداشت؟"
+          description="یک قدم هم برای شروع کافی است. هر وقت آماده بودی، می‌توانی قدم‌های دیگری اضافه کنی."
+        />
 
         <form className="stack" onSubmit={handleSubmit}>
           {steps.map((step, index) => (
@@ -112,14 +129,15 @@ export function CreateStepsPage() {
                       )
                     }
                   >
-                    حذف
+                    برداشتن
                   </button>
                 ) : null}
               </div>
 
               <TextInput
-                label="عنوان قدم"
+                label="اسم این قدم"
                 value={step.title}
+                maxLength={TEXT_LIMITS.stepTitle}
                 onChange={(event) =>
                   updateStepForm(index, { ...step, title: event.target.value })
                 }
@@ -127,7 +145,7 @@ export function CreateStepsPage() {
               />
 
               <TextInput
-                label="مقدار هدف"
+                label="مقدار سبک برای شروع"
                 type="number"
                 min="0"
                 step="0.1"
@@ -142,26 +160,27 @@ export function CreateStepsPage() {
                 placeholder="مثلاً ۵"
               />
 
-              <label className="field">
-                <span>واحد</span>
-                <select
-                  value={step.unit}
-                  onChange={(event) =>
-                    updateStepForm(index, { ...step, unit: event.target.value })
-                  }
-                >
+              <div className="field">
+                <span>با چه واحدی بسنجیم؟</span>
+                <div className="chip-grid" role="group" aria-label="انتخاب واحد قدم">
                   {UNIT_OPTIONS.map((unit) => (
-                    <option key={unit} value={unit}>
+                    <button
+                      className={`unit-chip ${step.unit === unit ? "is-selected" : ""}`}
+                      key={unit}
+                      type="button"
+                      onClick={() => updateStepForm(index, { ...step, unit })}
+                    >
                       {unit}
-                    </option>
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </div>
 
               {step.unit === "مورد دیگر" ? (
                 <TextInput
-                  label="واحد دلخواه"
+                  label="واحد خودت"
                   value={step.customUnit}
+                  maxLength={TEXT_LIMITS.customUnit}
                   onChange={(event) =>
                     updateStepForm(index, {
                       ...step,
@@ -180,19 +199,19 @@ export function CreateStepsPage() {
               variant="secondary"
               onClick={() => setSteps((current) => [...current, { ...emptyStep }])}
             >
-              اضافه کردن قدم
+              یک قدم دیگر هم اضافه کن
             </Button>
           ) : (
             <p className="muted">فعلاً همین چند قدم برای شروع کافی است.</p>
           )}
 
-          {error ? <p className="error-banner">{error}</p> : null}
+          <ErrorMessage message={error} />
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "در حال ثبت..." : "رفتن به داشبورد"}
+          <Button type="submit" isLoading={isSubmitting}>
+            {isSubmitting ? "داریم قدم‌ها را نگه می‌داریم..." : "برو به خانه مسیر"}
           </Button>
         </form>
-      </section>
+      </Card>
     </AppLayout>
   );
 }

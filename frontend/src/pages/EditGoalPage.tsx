@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
+import { ErrorMessage } from "../components/ErrorMessage";
+import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 import { TextInput } from "../components/TextInput";
 import {
   deleteGoal,
@@ -11,6 +15,7 @@ import {
   SOFT_ERROR_MESSAGE,
   updateGoal,
 } from "../lib/api";
+import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { Goal } from "../types";
 
 export function EditGoalPage() {
@@ -19,6 +24,7 @@ export function EditGoalPage() {
   const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -46,7 +52,12 @@ export function EditGoalPage() {
     const cleanTitle = title.trim();
 
     if (!cleanTitle) {
-      setError("عنوان هدف را بنویس.");
+      setError("این قسمت را خالی نگذار. یک جمله ساده کافی است.");
+      return;
+    }
+
+    if (isOverTextLimit(cleanTitle, TEXT_LIMITS.goalTitle)) {
+      setError(TEXT_LIMIT_MESSAGE);
       return;
     }
 
@@ -64,35 +75,43 @@ export function EditGoalPage() {
 
   async function handleDeleteGoal() {
     const confirmed = window.confirm(
-      "با حذف هدف، قدم‌ها و پیشرفت‌های ثبت‌شده هم حذف می‌شوند.",
+      "مطمئنی می‌خواهی این مسیر را حذف کنی؟ قدم‌ها و پیشرفت‌های ثبت‌شده‌اش هم برداشته می‌شوند.",
     );
     if (!confirmed) {
       return;
     }
 
     try {
+      setIsDeleting(true);
+      setError("");
       await deleteGoal();
       navigate("/dashboard");
     } catch {
       setError(SOFT_ERROR_MESSAGE);
+    } finally {
+      setIsDeleting(false);
     }
   }
 
   return (
-    <AppLayout title="ویرایش هدف">
-      <section className="card">
-        <h1>ویرایش هدف</h1>
+    <AppLayout title="ویرایش مسیر">
+      <section className="page-section">
+        <PageHeader
+          eyebrow="کمی تنظیمش کن"
+          title="ویرایش مسیر"
+          description="اگر جمله مسیرت بهتر شده، همین‌جا آرام‌تر و روشن‌ترش کن."
+        />
 
-        {isLoading ? <p className="muted">در حال آماده‌سازی...</p> : null}
-        {error ? <p className="error-banner">{error}</p> : null}
+        {isLoading ? <LoadingState text="داریم مسیرت را می‌آوریم..." /> : null}
+        <ErrorMessage message={error} />
 
         {!isLoading && !goal ? (
           <EmptyState
-            title="هنوز هدف فعالی نداری."
-            description="هر زمان آماده بودی می‌توانی یک مسیر کوچک بسازی."
+            title="هنوز مسیر فعالی نداری."
+            description="هر وقت آماده بودی، می‌توانی یک مسیر کوچک بسازی."
             action={
               <Button type="button" onClick={() => navigate("/concerns/select")}>
-                ساخت هدف
+                یک مسیر کوچک بساز
               </Button>
             }
           />
@@ -102,22 +121,31 @@ export function EditGoalPage() {
           <div className="stack">
             <form className="stack" onSubmit={handleSave}>
               <TextInput
-                label="عنوان هدف"
+                label="جمله مسیر"
                 value={title}
+                maxLength={TEXT_LIMITS.goalTitle}
                 onChange={(event) => setTitle(event.target.value)}
               />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
+              <Button type="submit" isLoading={isSubmitting}>
+                {isSubmitting ? "داریم نگهش می‌داریم..." : "نگه داشتن تغییر"}
               </Button>
             </form>
 
-            <section className="danger-panel">
-              <h2>حذف هدف</h2>
-              <p>با حذف هدف، قدم‌ها و پیشرفت‌های ثبت‌شده هم حذف می‌شوند.</p>
-              <Button type="button" variant="danger" onClick={handleDeleteGoal}>
-                حذف هدف
+            <Card variant="danger" className="danger-panel">
+              <h2>حذف این مسیر</h2>
+              <p>
+                اگر می‌خواهی از نو شروع کنی، می‌توانی این مسیر را حذف کنی. قبلش
+                یک بار دیگر از تو می‌پرسیم.
+              </p>
+              <Button
+                type="button"
+                variant="danger"
+                isLoading={isDeleting}
+                onClick={handleDeleteGoal}
+              >
+                حذف این مسیر
               </Button>
-            </section>
+            </Card>
           </div>
         ) : null}
       </section>

@@ -1,5 +1,6 @@
 import type { Step } from "../types";
 import { Button } from "./Button";
+import { Card } from "./Card";
 import { ProgressBar } from "./ProgressBar";
 
 type StepCardProps = {
@@ -14,7 +15,7 @@ function formatNumber(value: number) {
 
 export function StepCard({ step, onTrack, onDelete }: StepCardProps) {
   return (
-    <article className="step-card">
+    <Card as="article" className="step-card">
       <div className="step-card-top">
         <h3>{step.title}</h3>
         <span>{Math.round(step.progress_percent)}٪</span>
@@ -36,12 +37,12 @@ export function StepCard({ step, onTrack, onDelete }: StepCardProps) {
             type="button"
             variant="ghost"
             onClick={() => onDelete(step.id)}
-            aria-label="حذف قدم"
+            aria-label="برداشتن این قدم"
           >
-            حذف
+            برداشتن
           </Button>
         ) : null}
       </div>
-    </article>
+    </Card>
   );
 }
