@@ -23,6 +23,12 @@ const UNIT_OPTIONS = [
   "مورد دیگر",
 ];
 
+const STEP_TITLE_SUGGESTIONS = [
+  "۱۰ دقیقه تمرین آرام",
+  "چند صفحه مطالعه",
+  "یک کار کوچک را شروع کنم",
+];
+
 type StepForm = {
   title: string;
   targetValue: string;
@@ -143,6 +149,23 @@ export function CreateStepsPage() {
                 }
                 placeholder="مثلاً ۱۰ دقیقه تمرین آرام"
               />
+
+              <div className="hint-list" aria-label="نمونه اسم قدم">
+                {STEP_TITLE_SUGGESTIONS.map((suggestion) => (
+                  <button
+                    className={`suggestion-chip ${
+                      step.title === suggestion ? "is-selected" : ""
+                    }`}
+                    key={suggestion}
+                    type="button"
+                    onClick={() =>
+                      updateStepForm(index, { ...step, title: suggestion })
+                    }
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
 
               <TextInput
                 label="مقدار سبک برای شروع"

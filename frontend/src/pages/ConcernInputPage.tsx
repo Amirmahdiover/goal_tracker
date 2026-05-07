@@ -9,11 +9,28 @@ import { TextArea } from "../components/TextArea";
 import { createConcern, SOFT_ERROR_MESSAGE } from "../lib/api";
 import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 
+const CONCERN_SUGGESTIONS = [
+  "خوابم این روزها آرام نیست",
+  "کارهای خانه ذهنم را شلوغ کرده",
+  "دوست دارم دوباره کمی مطالعه کنم",
+];
+
 export function ConcernInputPage() {
   const navigate = useNavigate();
   const [concerns, setConcerns] = useState([""]);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function applySuggestion(text: string) {
+    setConcerns((current) => {
+      const firstEmptyIndex = current.findIndex((concern) => !concern.trim());
+      const targetIndex = firstEmptyIndex >= 0 ? firstEmptyIndex : 0;
+
+      return current.map((concern, index) =>
+        index === targetIndex ? text : concern,
+      );
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,9 +68,18 @@ export function ConcernInputPage() {
         />
 
         <div className="hint-list examples-list" aria-label="نمونه یادداشت‌ها">
-          <span>خوابم این روزها آرام نیست</span>
-          <span>کارهای خانه ذهنم را شلوغ کرده</span>
-          <span>دوست دارم دوباره کمی مطالعه کنم</span>
+          {CONCERN_SUGGESTIONS.map((suggestion) => (
+            <button
+              className={`suggestion-chip ${
+                concerns.includes(suggestion) ? "is-selected" : ""
+              }`}
+              key={suggestion}
+              type="button"
+              onClick={() => applySuggestion(suggestion)}
+            >
+              {suggestion}
+            </button>
+          ))}
         </div>
 
         <form className="stack spacious-form" onSubmit={handleSubmit}>

@@ -9,6 +9,12 @@ import { TextInput } from "../components/TextInput";
 import { createGoal, SOFT_ERROR_MESSAGE } from "../lib/api";
 import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 
+const GOAL_SUGGESTIONS = [
+  "هر روز چند صفحه بخوانم",
+  "کمی بیشتر مراقب بدنم باشم",
+  "حرکتم را آرام‌آرام بیشتر کنم",
+];
+
 export function CreateGoalPage() {
   const navigate = useNavigate();
   const selectedConcernText = useMemo(
@@ -72,9 +78,18 @@ export function CreateGoalPage() {
           />
 
           <div className="hint-list examples-list" aria-label="نمونه مسیرها">
-            <span>هر روز چند صفحه بخوانم</span>
-            <span>کمی بیشتر مراقب بدنم باشم</span>
-            <span>حرکتم را آرام‌آرام بیشتر کنم</span>
+            {GOAL_SUGGESTIONS.map((suggestion) => (
+              <button
+                className={`suggestion-chip ${
+                  title === suggestion ? "is-selected" : ""
+                }`}
+                key={suggestion}
+                type="button"
+                onClick={() => setTitle(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
           </div>
 
           <ErrorMessage message={error} />
