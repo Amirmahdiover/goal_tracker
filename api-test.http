@@ -1,0 +1,204 @@
+@baseUrl = http://127.0.0.1:8000
+@userId = 1cb58c0c-22d3-48e9-aee5-a7c834dfbf7e
+
+### 1. Create test user
+POST {{baseUrl}}/create-user
+Content-Type: application/json
+
+
+### 2. Test auth missing header
+GET {{baseUrl}}/concerns/
+
+
+### 3. Get concerns
+GET {{baseUrl}}/concerns/
+X-User-ID: {{userId}}
+
+
+### 4. Create concern 1
+POST {{baseUrl}}/concerns/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "text": "I feel confused about machine learning"
+}
+
+
+### 5. Create concern 2
+POST {{baseUrl}}/concerns/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "text": "My sleep schedule is messy"
+}
+
+
+### 6. Get concerns again
+GET {{baseUrl}}/concerns/
+X-User-ID: {{userId}}
+
+
+### 7. Create goal
+POST {{baseUrl}}/goal/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "title": "Start learning machine learning calmly"
+}
+
+
+### 8. Try creating second goal - should fail
+POST {{baseUrl}}/goal/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "title": "Second goal should not be allowed"
+}
+
+
+### 9. Get current goal
+GET {{baseUrl}}/goal/
+X-User-ID: {{userId}}
+
+
+### 10. Create steps
+POST {{baseUrl}}/goal/steps
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "steps": [
+    {
+      "title": "Watch ML course",
+      "target_value": 5,
+      "unit": "videos",
+      "order_index": 1
+    },
+    {
+      "title": "Practice with notebook",
+      "target_value": 3,
+      "unit": "sessions",
+      "order_index": 2
+    }
+  ]
+}
+
+
+### 11. Get steps with progress
+GET {{baseUrl}}/goal/steps
+X-User-ID: {{userId}}
+
+
+### 12. Add tracking for step 1
+POST {{baseUrl}}/tracking/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "step_id": 1,
+  "amount": 2,
+  "date": "2026-05-06",
+  "note": "Watched two videos"
+}
+
+
+### 13. Add tracking for step 2
+POST {{baseUrl}}/tracking/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "step_id": 2,
+  "amount": 1,
+  "date": "2026-05-06",
+  "note": "One small practice session"
+}
+
+
+### 14. Get steps again - progress should change
+GET {{baseUrl}}/goal/steps
+X-User-ID: {{userId}}
+
+
+### 15. Get goal summary
+GET {{baseUrl}}/goal/summary
+X-User-ID: {{userId}}
+
+
+### 16. Get tracking history
+GET {{baseUrl}}/tracking/
+X-User-ID: {{userId}}
+
+
+### 17. Update goal title
+PUT {{baseUrl}}/goal/
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "title": "Learn machine learning with small steps"
+}
+
+
+### 18. Update step
+PUT {{baseUrl}}/steps/1
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "title": "Watch beginner ML course",
+  "target_value": 6,
+  "unit": "videos",
+  "order_index": 1
+}
+
+
+### 19. Update tracking
+PUT {{baseUrl}}/tracking/1
+Content-Type: application/json
+X-User-ID: {{userId}}
+
+{
+  "amount": 3,
+  "date": "2026-05-06",
+  "note": "Actually watched three videos"
+}
+
+
+### 20. Check summary after update
+GET {{baseUrl}}/goal/summary
+X-User-ID: {{userId}}
+
+
+### 21. Delete tracking
+DELETE {{baseUrl}}/tracking/1
+X-User-ID: {{userId}}
+
+
+### 22. Check summary after deleting tracking
+GET {{baseUrl}}/goal/summary
+X-User-ID: {{userId}}
+
+
+### 23. Delete goal
+DELETE {{baseUrl}}/goal/
+X-User-ID: {{userId}}
+
+
+### 24. Dashboard empty state test - goal should not exist
+GET {{baseUrl}}/goal/
+X-User-ID: {{userId}}
+
+
+### 25. Steps should fail because no goal exists
+GET {{baseUrl}}/goal/steps
+X-User-ID: {{userId}}
+
+
+### 26. Tracking history should return empty list
+GET {{baseUrl}}/tracking/
+X-User-ID: {{userId}}

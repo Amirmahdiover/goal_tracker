@@ -1,11 +1,44 @@
-node_modules
+# dependencies
+node_modules/
+
+# production build
+dist/
+build/
+
+# env files
 .env
-dist
-build
+.env.local
+.env.*.local
+
+# Vite / tooling cache
+.vite/
+.cache/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
 .DS_Store
-.vite
-.next
-__pycache__
-.venv
-*.pyc
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Python backend
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# local database
+test.db
+*.sqlite
+*.sqlite3
+
+# misc
+coverage/
+
+# database
 test.db

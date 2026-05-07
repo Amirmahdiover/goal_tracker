@@ -1,154 +1,129 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+import axios from "axios";
+import type {
+  Concern,
+  Goal,
+  GoalSummary,
+  Step,
+  StepPayload,
+  TrackingPayload,
+  TrackingRecord,
+  TrackingUpdatePayload,
+  User,
+} from "../types";
 
-export class ApiError extends Error {
-  status: number;
+const USER_STORAGE_KEY = "userId";
 
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
+export const SOFT_ERROR_MESSAGE = "مشکلی پیش آمد. دوباره امتحان کن.";
 
-function getUserId() {
-  return localStorage.getItem("user_id");
-}
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+});
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const userId = getUserId();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined),
-  };
-
-  if (userId) {
-    headers["X-User-ID"] = userId;
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new ApiError(error?.detail || "Something went wrong", response.status);
+api.interceptors.request.use((config) => {
+  if (config.url !== "/create-user") {
+    const userId = localStorage.getItem(USER_STORAGE_KEY);
+    if (userId) {
+      config.headers.set("X-User-ID", userId);
+    }
   }
 
-  return response.json();
+  return config;
+});
+
+export function isNotFoundError(error: unknown) {
+  return axios.isAxiosError(error) && error.response?.status === 404;
 }
-
-export type GoalType = "hours" | "count";
-
-export type Goal = {
-  id: string;
-  title: string;
-  goal_type: GoalType;
-  target_value: number;
-  created_at: string;
-};
-
-export type GoalSummary = {
-  goal_id: string;
-  title: string;
-  goal_type: GoalType;
-  target_value: number;
-  total_progress: number;
-  remaining: number;
-  progress_percent: number;
-  daily_average: number;
-  estimated_days_left: number | null;
-  has_milestones: boolean;
-};
-
-export type Milestone = {
-  id: number;
-  goal_id: string;
-  title: string;
-  target_value: number;
-  order_index: number;
-  current_progress: number;
-  remaining: number;
-  progress_percent: number;
-  bar_width_percent: number;
-  created_at: string;
-};
-
-export type CreatedMilestone = {
-  id: number;
-  goal_id: string;
-  title: string;
-  target_value: number;
-  order_index: number;
-  created_at: string;
-};
-
-export type Tracking = {
-  id: number;
-  goal_id: string;
-  milestone_id: number | null;
-  amount: number;
-  date: string;
-  created_at: string;
-};
 
 export async function createUser() {
-  const user = await request<{ id: string }>("/create-user", {
-    method: "POST",
-  });
-
-  localStorage.setItem("user_id", user.id);
-  return user;
+  const response = await api.post<User>("/create-user");
+  return response.data;
 }
 
-export async function createGoal(data: {
-  title: string;
-  goal_type: GoalType;
-  target_value: number;
-}) {
-  return request<Goal>("/goal/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export async function getConcerns() {
+  const response = await api.get<Concern[]>("/concerns/");
+  return response.data;
+}
+
+export async function createConcern(text: string) {
+  const response = await api.post<Concern>("/concerns/", { text });
+  return response.data;
+}
+
+export async function updateConcern(concernId: number, text: string) {
+  const response = await api.put<Concern>(`/concerns/${concernId}`, { text });
+  return response.data;
+}
+
+export async function deleteConcern(concernId: number) {
+  await api.delete(`/concerns/${concernId}`);
 }
 
 export async function getGoal() {
-  return request<Goal>("/goal/");
+  const response = await api.get<Goal>("/goal/");
+  return response.data;
+}
+
+export async function createGoal(title: string) {
+  const response = await api.post<Goal>("/goal/", { title });
+  return response.data;
+}
+
+export async function updateGoal(title: string) {
+  const response = await api.put<Goal>("/goal/", { title });
+  return response.data;
+}
+
+export async function deleteGoal() {
+  await api.delete("/goal/");
 }
 
 export async function getGoalSummary() {
-  return request<GoalSummary>("/goal/summary");
+  const response = await api.get<GoalSummary>("/goal/summary");
+  return response.data;
 }
 
-export async function createMilestones(data: {
-  milestones: {
-    title: string;
-    target_value: number;
-    order_index: number;
-  }[];
-}) {
-  return request<CreatedMilestone[]>("/goal/milestones", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export async function getSteps() {
+  const response = await api.get<Step[]>("/goal/steps");
+  return response.data;
 }
 
-export async function getMilestones() {
-  return request<Milestone[]>("/goal/milestones");
+export async function createSteps(steps: StepPayload[]) {
+  const response = await api.post<Step[]>("/goal/steps", { steps });
+  return response.data;
 }
 
-export async function addTracking(data: {
-  amount: number;
-  date: string;
-  milestone_id?: number;
-}) {
-  return request<Tracking>("/tracking/", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export async function addStep(step: StepPayload) {
+  const response = await api.post<Step>("/goal/steps/add", step);
+  return response.data;
+}
+
+export async function updateStep(stepId: number, step: StepPayload) {
+  const response = await api.put<Step>(`/steps/${stepId}`, step);
+  return response.data;
+}
+
+export async function deleteStep(stepId: number) {
+  await api.delete(`/steps/${stepId}`);
 }
 
 export async function getTrackingHistory() {
-  return request<Tracking[]>("/tracking/");
+  const response = await api.get<TrackingRecord[]>("/tracking/");
+  return response.data;
+}
+
+export async function createTracking(payload: TrackingPayload) {
+  const response = await api.post("/tracking/", payload);
+  return response.data;
+}
+
+export async function updateTracking(
+  trackingId: number,
+  payload: TrackingUpdatePayload,
+) {
+  const response = await api.put(`/tracking/${trackingId}`, payload);
+  return response.data;
+}
+
+export async function deleteTracking(trackingId: number) {
+  await api.delete(`/tracking/${trackingId}`);
 }

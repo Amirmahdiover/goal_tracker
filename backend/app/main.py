@@ -1,16 +1,18 @@
 from fastapi import FastAPI, Depends
 from .database import engine, Base
-from .routers import goal, tracking, milestones
+from .routers import goal, tracking, steps, concern
 from app.database import get_db
+from app.dependencies import header_scheme
 
 from fastapi.middleware.cors import CORSMiddleware
 
 # uvicorn app.main:app --reload
-
+# npm run dev
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Goal Tracker API"
+    title="Goal Tracker API",
+    dependencies=[Depends(header_scheme)]
 )
 
 app.add_middleware(
@@ -21,9 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 app.include_router(goal.router)
 app.include_router(tracking.router)
-app.include_router(milestones.router)
+app.include_router(steps.router)
+app.include_router(concern.router)
 
 
 
