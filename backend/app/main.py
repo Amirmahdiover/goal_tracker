@@ -6,6 +6,19 @@ from app.dependencies import header_scheme
 
 from fastapi.middleware.cors import CORSMiddleware
 
+# -----------------for run flare-------------------
+import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.join(BASE_DIR, "backend")
+
+sys.path.insert(0, BACKEND_DIR)
+
+from app.main import app
+
+
+
 # uvicorn app.main:app --reload
 # npm run dev
 Base.metadata.create_all(bind=engine)
