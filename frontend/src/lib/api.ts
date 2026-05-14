@@ -12,12 +12,13 @@ import type {
 } from "../types";
 
 const USER_STORAGE_KEY = "userId";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export const SOFT_ERROR_MESSAGE =
   "مشکلی پیش آمد. دوباره امتحان کنیم؟";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
