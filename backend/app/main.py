@@ -6,6 +6,7 @@ from app.dependencies import header_scheme
 
 from fastapi.middleware.cors import CORSMiddleware
 
+
 # uvicorn app.main:app --reload
 # npm run dev
 Base.metadata.create_all(bind=engine)
