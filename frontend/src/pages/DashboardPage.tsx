@@ -233,7 +233,7 @@ export function DashboardPage() {
       {!isLoading && goal ? (
         <div className="stack">
           <Card className="goal-summary-card">
-            <p className="eyebrow">مسیر فعلی ت,,,و</p>
+            <p className="eyebrow">مسیر فعلی تو</p>
             <h1>{goal.title}</h1>
             <div className="progress-summary">
               <div>
