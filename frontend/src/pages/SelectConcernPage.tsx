@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
@@ -21,7 +21,7 @@ export function SelectConcernPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadConcerns() {
+  const loadConcerns = useCallback(async () => {
     try {
       const data = await getConcerns();
       setConcerns(data);
@@ -31,7 +31,7 @@ export function SelectConcernPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -39,7 +39,7 @@ export function SelectConcernPage() {
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [loadConcerns]);
 
   async function handleAddConcern() {
     const text = newConcern.trim();

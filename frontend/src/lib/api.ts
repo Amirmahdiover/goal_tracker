@@ -2,9 +2,11 @@ import axios from "axios";
 import type {
   Concern,
   Goal,
+  GoalSuggestionResponse,
   GoalSummary,
   Step,
   StepPayload,
+  StepSuggestionResponse,
   TrackingPayload,
   TrackingRecord,
   TrackingUpdatePayload,
@@ -77,6 +79,21 @@ export async function updateGoal(title: string) {
 
 export async function deleteGoal() {
   await api.delete("/goal/");
+}
+
+export async function suggestGoals(concern: string) {
+  const response = await api.post<GoalSuggestionResponse>("/suggestions/goals", {
+    concern,
+  });
+  return response.data;
+}
+
+export async function suggestSteps(goalTitle: string, concern?: string | null) {
+  const response = await api.post<StepSuggestionResponse>("/suggestions/steps", {
+    goal_title: goalTitle,
+    concern: concern || null,
+  });
+  return response.data;
 }
 
 export async function getGoalSummary() {

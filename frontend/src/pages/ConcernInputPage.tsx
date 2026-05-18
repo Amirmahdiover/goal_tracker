@@ -50,7 +50,12 @@ export function ConcernInputPage() {
       setError("");
       setIsSubmitting(true);
       await Promise.all(texts.map((text) => createConcern(text)));
-      navigate("/concerns/select");
+      if (texts.length === 1) {
+        sessionStorage.setItem("selectedConcernText", texts[0]);
+        navigate("/goal/new");
+      } else {
+        navigate("/concerns/select");
+      }
     } catch {
       setError(SOFT_ERROR_MESSAGE);
     } finally {
@@ -107,7 +112,7 @@ export function ConcernInputPage() {
                     )
                   }
                 >
-                  برداشتن این یکی
+                  حذف این یکی
                 </button>
               ) : null}
             </div>
@@ -128,7 +133,7 @@ export function ConcernInputPage() {
           <ErrorMessage message={error} />
 
           <Button type="submit" isLoading={isSubmitting}>
-            {isSubmitting ? "داریم نگهش می‌داریم..." : "ادامه بده"}
+            {isSubmitting ? "داریم نگهش می‌داریم..." : "مرحله ی بعدی"}
           </Button>
         </form>
       </Card>

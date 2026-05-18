@@ -17,6 +17,7 @@ import {
   getSteps,
   isNotFoundError,
   SOFT_ERROR_MESSAGE,
+  updateStep,
 } from "../lib/api";
 import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { Goal, GoalSummary, Step } from "../types";
@@ -78,6 +79,8 @@ export function DashboardPage() {
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("");
   const [isAddingStep, setIsAddingStep] = useState(false);
+  const [editingStep, setEditingStep] = useState<Step | null>(null);
+  const [isUpdatingStep, setIsUpdatingStep] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   async function loadDashboard() {
@@ -184,8 +187,65 @@ export function DashboardPage() {
     }
   }
 
+  function openEditStep(step: Step) {
+    setEditingStep(step);
+    setShowAddStep(false);
+    setStepTitle(step.title);
+    setTargetValue(step.target_value.toString());
+    setUnit(step.unit);
+    setError("");
+  }
+
+  function resetStepForm() {
+    setStepTitle("");
+    setTargetValue("");
+    setUnit("");
+    setEditingStep(null);
+  }
+
+  async function handleUpdateStep(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingStep) {
+      return;
+    }
+
+    const cleanTitle = stepTitle.trim();
+    const cleanUnit = unit.trim();
+    const cleanTarget = Number(targetValue);
+
+    if (!cleanTitle || cleanTarget <= 0 || !cleanUnit) {
+      setError("برای این قدم، اسم، مقدار و واحد را خالی نگذار.");
+      return;
+    }
+
+    if (
+      isOverTextLimit(cleanTitle, TEXT_LIMITS.stepTitle) ||
+      isOverTextLimit(cleanUnit, TEXT_LIMITS.customUnit)
+    ) {
+      setError(TEXT_LIMIT_MESSAGE);
+      return;
+    }
+
+    try {
+      setIsUpdatingStep(true);
+      setError("");
+      await updateStep(editingStep.id, {
+        title: cleanTitle,
+        target_value: cleanTarget,
+        unit: cleanUnit,
+        order_index: editingStep.order_index,
+      });
+      resetStepForm();
+      await loadDashboard();
+    } catch {
+      setError(SOFT_ERROR_MESSAGE);
+    } finally {
+      setIsUpdatingStep(false);
+    }
+  }
+
   async function handleDeleteStep(stepId: number) {
-    const confirmed = window.confirm("مطمئنی می‌خواهی این قدم را از مسیرت برداری؟");
+    const confirmed = window.confirm("مطمئنی می‌خواهی این قدم را حذف کنی؟");
     if (!confirmed) {
       return;
     }
@@ -200,7 +260,7 @@ export function DashboardPage() {
   }
 
   return (
-    <AppLayout title="خانه مسیر">
+    <AppLayout title="خانه">
       {isLoading ? (
         <Card>
           <LoadingState text="داریم مسیرت را می‌آوریم..." />
@@ -252,7 +312,10 @@ export function DashboardPage() {
               type="button"
               variant="secondary"
               disabled={steps.length >= 5}
-              onClick={() => setShowAddStep((current) => !current)}
+              onClick={() => {
+                resetStepForm();
+                setShowAddStep((current) => !current);
+              }}
             >
               + اضافه کردن قدم
             </Button>
@@ -307,6 +370,43 @@ export function DashboardPage() {
             </Card>
           ) : null}
 
+          {editingStep ? (
+            <Card className="stack compact-panel" variant="soft">
+              <h2>ویرایش قدم</h2>
+              <form className="stack" onSubmit={handleUpdateStep}>
+                <TextInput
+                  label="اسم این قدم"
+                  value={stepTitle}
+                  maxLength={TEXT_LIMITS.stepTitle}
+                  onChange={(event) => setStepTitle(event.target.value)}
+                />
+                <TextInput
+                  label="مقدار هدف"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  inputMode="decimal"
+                  value={targetValue}
+                  onChange={(event) => setTargetValue(event.target.value)}
+                />
+                <TextInput
+                  label="واحد"
+                  value={unit}
+                  maxLength={TEXT_LIMITS.customUnit}
+                  onChange={(event) => setUnit(event.target.value)}
+                />
+                <div className="button-row">
+                  <Button type="submit" isLoading={isUpdatingStep}>
+                    نگه داشتن تغییر
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={resetStepForm}>
+                    بی‌خیال
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          ) : null}
+
           {steps.length === 0 ? (
             <EmptyState
               title="هنوز قدمی برای این مسیر نداری."
@@ -324,6 +424,7 @@ export function DashboardPage() {
                   key={step.id}
                   step={step}
                   onTrack={(stepId) => navigate(`/tracking/add/${stepId}`)}
+                  onEdit={openEditStep}
                   onDelete={handleDeleteStep}
                 />
               ))}

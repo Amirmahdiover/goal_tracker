@@ -1,11 +1,14 @@
 from fastapi import FastAPI, Depends
 from .database import engine, Base
-from .routers import goal, tracking, steps, concern
+from .routers import goal, tracking, steps, concern, suggestions
 from app.database import get_db
 from app.dependencies import header_scheme
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # uvicorn app.main:app --reload
 # npm run dev
@@ -30,6 +33,7 @@ app.include_router(goal.router)
 app.include_router(tracking.router)
 app.include_router(steps.router)
 app.include_router(concern.router)
+app.include_router(suggestions.router)
 
 
 

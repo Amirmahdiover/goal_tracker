@@ -108,7 +108,7 @@ export function ConcernNotesPage() {
   }
 
   async function handleDelete(concernId: number) {
-    const confirmed = window.confirm("مطمئنی می‌خواهی این یادداشت را برداری؟");
+    const confirmed = window.confirm("مطمئنی می‌خواهی این یادداشت را حذف کنی؟");
     if (!confirmed) {
       return;
     }
@@ -189,7 +189,7 @@ export function ConcernNotesPage() {
                       isLoading={deletingId === concern.id}
                       onClick={() => handleDelete(concern.id)}
                     >
-                      برداشتن
+                      حذف
                     </Button>
                   </div>
                 </>

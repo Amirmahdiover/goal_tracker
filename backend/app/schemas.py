@@ -132,3 +132,33 @@ class ConcernResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Suggestions ---
+class GoalSuggestionRequest(BaseModel):
+    concern: str = Field(..., min_length=1, max_length=500)
+
+
+class GoalSuggestion(BaseModel):
+    title: str = Field(..., min_length=1, max_length=120)
+
+
+class GoalSuggestionResponse(BaseModel):
+    suggestions: list[GoalSuggestion]
+    source: Literal["openai", "fallback"]
+
+
+class StepSuggestionRequest(BaseModel):
+    goal_title: str = Field(..., min_length=1, max_length=120)
+    concern: Optional[str] = Field(default=None, max_length=500)
+
+
+class StepSuggestion(BaseModel):
+    title: str = Field(..., min_length=1, max_length=120)
+    target_value: float = Field(..., gt=0)
+    unit: str = Field(..., min_length=1, max_length=40)
+
+
+class StepSuggestionResponse(BaseModel):
+    suggestions: list[StepSuggestion]
+    source: Literal["openai", "fallback"]

@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "../components/AppLayout";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { TextInput } from "../components/TextInput";
-import { createSteps, SOFT_ERROR_MESSAGE } from "../lib/api";
+import { createSteps, getGoal, SOFT_ERROR_MESSAGE, suggestSteps } from "../lib/api";
 import { TEXT_LIMITS, TEXT_LIMIT_MESSAGE, isOverTextLimit } from "../lib/textLimits";
 import type { StepPayload } from "../types";
+
+const CUSTOM_UNIT_OPTION = "مورد دیگر";
 
 const UNIT_OPTIONS = [
   "بار",
@@ -20,13 +23,7 @@ const UNIT_OPTIONS = [
   "ویدیو",
   "لیوان",
   "جلسه",
-  "مورد دیگر",
-];
-
-const STEP_TITLE_SUGGESTIONS = [
-  "۱۰ دقیقه تمرین آرام",
-  "چند صفحه مطالعه",
-  "یک کار کوچک را شروع کنم",
+  CUSTOM_UNIT_OPTION,
 ];
 
 type StepForm = {
@@ -47,7 +44,7 @@ function toStepPayload(step: StepForm, index: number): StepPayload {
   return {
     title: step.title.trim(),
     target_value: Number(step.targetValue),
-    unit: step.unit === "مورد دیگر" ? step.customUnit.trim() : step.unit,
+    unit: step.unit === CUSTOM_UNIT_OPTION ? step.customUnit.trim() : step.unit,
     order_index: index + 1,
   };
 }
@@ -56,11 +53,59 @@ function hasStartedStep(step: StepForm) {
   return Boolean(step.title.trim() || step.targetValue || step.customUnit.trim());
 }
 
+function formatSuggestionNumber(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+}
+
 export function CreateStepsPage() {
   const navigate = useNavigate();
   const [steps, setSteps] = useState<StepForm[]>([{ ...emptyStep }]);
+  const [goalTitle, setGoalTitle] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSuggestions() {
+      try {
+        const goal = await getGoal();
+        if (isMounted) {
+          setGoalTitle(goal.title);
+        }
+        const response = await suggestSteps(
+          goal.title,
+          sessionStorage.getItem("selectedConcernText"),
+        );
+
+        const suggestedSteps = response.suggestions.map((suggestion) => ({
+          title: suggestion.title,
+          targetValue: formatSuggestionNumber(suggestion.target_value),
+          unit: UNIT_OPTIONS.includes(suggestion.unit)
+            ? suggestion.unit
+            : CUSTOM_UNIT_OPTION,
+          customUnit: UNIT_OPTIONS.includes(suggestion.unit) ? "" : suggestion.unit,
+        }));
+
+        if (isMounted && suggestedSteps.length > 0) {
+          setSteps(suggestedSteps);
+        }
+      } catch {
+        // The user can still write steps manually if suggestions are unavailable.
+      } finally {
+        if (isMounted) {
+          setIsLoadingSuggestions(false);
+        }
+      }
+    }
+
+    void loadSuggestions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateStepForm(index: number, nextStep: StepForm) {
     setSteps((current) =>
@@ -121,6 +166,18 @@ export function CreateStepsPage() {
           description="یک قدم هم برای شروع کافی است. هر وقت آماده بودی، می‌توانی قدم‌های دیگری اضافه کنی."
         />
 
+        {goalTitle ? (
+          <div className="selected-note tracking-step-note">
+            <span>مسیر انتخاب‌شده:</span>
+            <strong>{goalTitle}</strong>
+            <small>حتما لازم نیست از این پیشنهاد ها استفاده کنی رفیق.</small>
+          </div>
+        ) : null}
+
+        {isLoadingSuggestions ? (
+          <LoadingState text="در حال دریافت پیشنهادها..." />
+        ) : null}
+
         <form className="stack" onSubmit={handleSubmit}>
           {steps.map((step, index) => (
             <div className="step-form" key={index}>
@@ -135,7 +192,7 @@ export function CreateStepsPage() {
                       )
                     }
                   >
-                    برداشتن
+                    حذف
                   </button>
                 ) : null}
               </div>
@@ -149,23 +206,6 @@ export function CreateStepsPage() {
                 }
                 placeholder="مثلاً ۱۰ دقیقه تمرین آرام"
               />
-
-              <div className="hint-list" aria-label="نمونه اسم قدم">
-                {STEP_TITLE_SUGGESTIONS.map((suggestion) => (
-                  <button
-                    className={`suggestion-chip ${
-                      step.title === suggestion ? "is-selected" : ""
-                    }`}
-                    key={suggestion}
-                    type="button"
-                    onClick={() =>
-                      updateStepForm(index, { ...step, title: suggestion })
-                    }
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
 
               <TextInput
                 label="مقدار سبک برای شروع"
@@ -199,7 +239,7 @@ export function CreateStepsPage() {
                 </div>
               </div>
 
-              {step.unit === "مورد دیگر" ? (
+              {step.unit === CUSTOM_UNIT_OPTION ? (
                 <TextInput
                   label="واحد خودت"
                   value={step.customUnit}
@@ -231,7 +271,7 @@ export function CreateStepsPage() {
           <ErrorMessage message={error} />
 
           <Button type="submit" isLoading={isSubmitting}>
-            {isSubmitting ? "داریم قدم‌ها را نگه می‌داریم..." : "برو به خانه مسیر"}
+            {isSubmitting ? "داریم قدم‌ها را نگه می‌داریم..." : "برو به خانه"}
           </Button>
         </form>
       </Card>

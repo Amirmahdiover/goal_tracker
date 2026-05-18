@@ -24,7 +24,7 @@ export function AppLayout({
               <p className="app-kicker">Goal Strategy</p>
               <strong>{title}</strong>
             </div>
-            {showDashboardLink ? <Link to="/dashboard">خانه مسیر</Link> : null}
+            {showDashboardLink ? <Link to="/dashboard">خانه</Link> : null}
           </header>
         ) : null}
         {children}

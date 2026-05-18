@@ -6,6 +6,7 @@ import { ProgressBar } from "./ProgressBar";
 type StepCardProps = {
   step: Step;
   onTrack: (stepId: number) => void;
+  onEdit?: (step: Step) => void;
   onDelete?: (stepId: number) => void;
 };
 
@@ -13,7 +14,7 @@ function formatNumber(value: number) {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 }
 
-export function StepCard({ step, onTrack, onDelete }: StepCardProps) {
+export function StepCard({ step, onTrack, onEdit, onDelete }: StepCardProps) {
   return (
     <Card as="article" className="step-card">
       <div className="step-card-top">
@@ -28,18 +29,23 @@ export function StepCard({ step, onTrack, onDelete }: StepCardProps) {
         {step.unit}
       </p>
 
-      <div className="button-row">
+      <div className="step-actions">
         <Button type="button" onClick={() => onTrack(step.id)}>
           ثبت پیشرفت
         </Button>
+        {onEdit ? (
+          <Button type="button" variant="ghost" onClick={() => onEdit(step)}>
+            ویرایش
+          </Button>
+        ) : null}
         {onDelete ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="danger"
             onClick={() => onDelete(step.id)}
-            aria-label="برداشتن این قدم"
+            aria-label="حذف این قدم"
           >
-            برداشتن
+            حذف
           </Button>
         ) : null}
       </div>

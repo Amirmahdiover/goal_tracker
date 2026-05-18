@@ -44,6 +44,26 @@ export type StepPayload = {
   order_index: number;
 };
 
+export type GoalSuggestion = {
+  title: string;
+};
+
+export type GoalSuggestionResponse = {
+  suggestions: GoalSuggestion[];
+  source: "openai" | "fallback";
+};
+
+export type StepSuggestion = {
+  title: string;
+  target_value: number;
+  unit: string;
+};
+
+export type StepSuggestionResponse = {
+  suggestions: StepSuggestion[];
+  source: "openai" | "fallback";
+};
+
 export type TrackingRecord = {
   id: number;
   goal_id: string;

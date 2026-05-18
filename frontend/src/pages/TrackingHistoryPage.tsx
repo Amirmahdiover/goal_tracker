@@ -62,7 +62,7 @@ export function TrackingHistoryPage() {
   }, []);
 
   async function handleDelete(recordId: number) {
-    const confirmed = window.confirm("مطمئنی می‌خواهی این یادداشت از مسیرت برداشته شود؟");
+    const confirmed = window.confirm("مطمئنی می‌خواهی این یادداشت حذف شود؟");
     if (!confirmed) {
       return;
     }
@@ -204,7 +204,7 @@ export function TrackingHistoryPage() {
                       isLoading={deletingId === record.id}
                       onClick={() => handleDelete(record.id)}
                     >
-                      برداشتن
+                      حذف
                     </Button>
                   </div>
                 </>

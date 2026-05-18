@@ -75,7 +75,7 @@ export function EditGoalPage() {
 
   async function handleDeleteGoal() {
     const confirmed = window.confirm(
-      "مطمئنی می‌خواهی این مسیر را حذف کنی؟ قدم‌ها و پیشرفت‌های ثبت‌شده‌اش هم برداشته می‌شوند.",
+      "مطمئنی می‌خواهی این مسیر را حذف کنی؟ قدم‌ها و پیشرفت‌های ثبت‌شده‌اش هم حذف می‌شوند.",
     );
     if (!confirmed) {
       return;

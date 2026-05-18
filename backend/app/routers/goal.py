@@ -19,7 +19,8 @@ def create_goal(
 ):
     existing = db.query(models.Goal).filter(models.Goal.user_id == user.id).first()
     if existing:
-        raise HTTPException(status_code=400, detail="User already has an active goal")
+        db.delete(existing)
+        db.flush()
 
     db_goal = models.Goal(title=goal.title, user_id=user.id)
     db.add(db_goal)
